@@ -2,8 +2,11 @@
 """
 mikush - A tsundere shell because why not~
 Created by MalikHw
+GitHub: https://github.com/MalikHw
+YouTube: @MalikHw47
+Ko-fi: MalikHw47
 
-MIT License - Because sharing is caring... not that I care about you or anything! >_<
+MIT License
 """
 
 import os
@@ -13,14 +16,14 @@ import shlex
 import readline
 import atexit
 import signal
+import random
 from datetime import datetime
 import pwd
 import socket
 import glob
 import re
-import random
-import stat
 from pathlib import Path
+import argparse
 
 class Colors:
     # ANSI color codes
@@ -36,108 +39,223 @@ class Colors:
     MAGENTA = '\033[95m'
     CYAN = '\033[96m'
     WHITE = '\033[97m'
-    PINK = '\033[38;5;213m'
+    PINK = '\033[95m'
     
     # Backgrounds
     BG_RED = '\033[101m'
     BG_GREEN = '\033[102m'
 
-class NerdIcons:
-    # File type icons
+class FileIcons:
+    """Nerd font icons for different file types"""
+    FOLDER = '\uf115'
     PYTHON = '\ue73c'
-    GIT_BRANCH = '\ue702'
-    FOLDER = '\uf07b'
-    FOLDER_OPEN = '\uf07c'
-    FILE = '\uf15b'
+    GIT = '\ue702'
     
-    # Programming languages
-    JAVASCRIPT = '\ue74e'
-    HTML = '\ue736'
-    CSS = '\ue749'
-    JSON = '\ue60b'
-    MARKDOWN = '\ue73e'
-    SHELL = '\ue795'
-    C = '\ue61e'
-    CPP = '\ue61d'
-    RUST = '\ue7a8'
-    GO = '\ue627'
-    JAVA = '\ue738'
-    PHP = '\ue73d'
-    RUBY = '\ue739'
-    
-    # File types
-    IMAGE = '\uf1c5'
-    VIDEO = '\uf1c8'
-    AUDIO = '\uf1c7'
-    PDF = '\uf1c1'
-    ZIP = '\uf1c6'
-    TEXT = '\uf15c'
-    CONFIG = '\ue615'
-    LOG = '\uf18d'
-    DATABASE = '\uf1c0'
-    
-    # Special files
-    LICENSE = '\uf0c4'
-    README = '\uf7fb'
-    GITIGNORE = '\uf1d3'
-    DOCKERFILE = '\uf308'
-    MAKEFILE = '\ue673'
-    PKGBUILD = '\uf303'
+    # File type icons
+    ICONS = {
+        # Programming languages
+        '.py': '\ue73c',      # Python
+        '.js': '\ue74e',      # JavaScript
+        '.ts': '\ue628',      # TypeScript
+        '.html': '\ue736',    # HTML
+        '.css': '\ue749',     # CSS
+        '.java': '\ue204',    # Java
+        '.cpp': '\ue61d',     # C++
+        '.c': '\ue61e',       # C
+        '.h': '\uf0fd',       # Header
+        '.rs': '\ue7a8',      # Rust
+        '.go': '\ue626',      # Go
+        '.php': '\ue73d',     # PHP
+        '.rb': '\ue21e',      # Ruby
+        '.sh': '\uf489',      # Shell script
+        '.bash': '\uf489',    # Bash
+        '.zsh': '\uf489',     # Zsh
+        '.fish': '\uf489',    # Fish
+        '.ps1': '\uf489',     # PowerShell
+        '.r': '\uf25d',       # R
+        '.swift': '\ue755',   # Swift
+        '.kt': '\ue634',      # Kotlin
+        '.scala': '\ue737',   # Scala
+        '.clj': '\ue76a',     # Clojure
+        '.hs': '\ue777',      # Haskell
+        '.elm': '\uf102',     # Elm
+        '.ex': '\ue62d',      # Elixir
+        '.exs': '\ue62d',     # Elixir script
+        '.erl': '\ue7b1',     # Erlang
+        '.ml': '\ue7a7',      # OCaml
+        '.fs': '\ue7a7',      # F#
+        '.pas': '\uf8da',     # Pascal
+        '.pl': '\ue769',      # Perl
+        '.lua': '\ue620',     # Lua
+        '.vim': '\ue7c5',     # Vim
+        '.sql': '\ue7c4',     # SQL
+        
+        # Images
+        '.png': '\uf1c5',
+        '.jpg': '\uf1c5',
+        '.jpeg': '\uf1c5',
+        '.gif': '\uf1c5',
+        '.bmp': '\uf1c5',
+        '.svg': '\uf1c5',
+        '.ico': '\uf1c5',
+        '.webp': '\uf1c5',
+        '.tiff': '\uf1c5',
+        '.raw': '\uf1c5',
+        
+        # Documents
+        '.pdf': '\uf1c1',
+        '.doc': '\uf1c2',
+        '.docx': '\uf1c2',
+        '.txt': '\uf15c',
+        '.md': '\uf48a',
+        '.rtf': '\uf15c',
+        '.odt': '\uf1c2',
+        '.tex': '\ue600',
+        '.epub': '\ue28b',
+        '.mobi': '\ue28b',
+        
+        # Archives
+        '.zip': '\uf410',
+        '.rar': '\uf410',
+        '.tar': '\uf410',
+        '.gz': '\uf410',
+        '.7z': '\uf410',
+        '.xz': '\uf410',
+        '.bz2': '\uf410',
+        '.tar.gz': '\uf410',
+        '.tar.xz': '\uf410',
+        '.deb': '\uf187',
+        '.rpm': '\uf187',
+        '.pkg.tar.xz': '\uf187',
+        
+        # Audio
+        '.mp3': '\uf001',
+        '.wav': '\uf001',
+        '.flac': '\uf001',
+        '.ogg': '\uf001',
+        '.m4a': '\uf001',
+        '.aac': '\uf001',
+        '.wma': '\uf001',
+        
+        # Video
+        '.mp4': '\uf03d',
+        '.avi': '\uf03d',
+        '.mkv': '\uf03d',
+        '.mov': '\uf03d',
+        '.wmv': '\uf03d',
+        '.flv': '\uf03d',
+        '.webm': '\uf03d',
+        '.m4v': '\uf03d',
+        
+        # Config files
+        '.json': '\uf0626',
+        '.xml': '\uf72d',
+        '.yaml': '\uf481',
+        '.yml': '\uf481',
+        '.toml': '\uf481',
+        '.ini': '\uf481',
+        '.cfg': '\uf481',
+        '.conf': '\uf481',
+        '.config': '\uf481',
+        
+        # Special files
+        'makefile': '\uf728',
+        'dockerfile': '\uf308',
+        'docker-compose.yml': '\uf308',
+        'docker-compose.yaml': '\uf308',
+        'vagrantfile': '\uf26e',
+        'license': '\uf48d',
+        'readme': '\uf48a',
+        'changelog': '\uf48a',
+        'authors': '\uf48a',
+        'contributors': '\uf48a',
+        'copying': '\uf48d',
+        'install': '\uf48a',
+        'news': '\uf48a',
+        'todo': '\uf48a',
+        'pkgbuild': '\uf303',  # Arch Linux package
+        '.gitignore': '\ue702',
+        '.gitmodules': '\ue702',
+        '.gitattributes': '\ue702',
+        '.env': '\uf462',
+        '.env.example': '\uf462',
+        '.editorconfig': '\ue615',
+        '.eslintrc': '\ue60c',
+        '.prettierrc': '\ue60b',
+        'package.json': '\ue718',
+        'package-lock.json': '\ue718',
+        'yarn.lock': '\ue718',
+        'requirements.txt': '\ue73c',
+        'setup.py': '\ue73c',
+        'pyproject.toml': '\ue73c',
+        'pipfile': '\ue73c',
+        'cargo.toml': '\ue7a8',
+        'cargo.lock': '\ue7a8',
+        'gemfile': '\ue21e',
+        'gemfile.lock': '\ue21e',
+        'composer.json': '\ue73d',
+        'composer.lock': '\ue73d',
+        'go.mod': '\ue626',
+        'go.sum': '\ue626',
+        
+        # Default
+        'default': '\uf15b'
+    }
 
 class TsundereMessages:
-    CD_NOT_FOUND = [
-        "That directory doesn't exist, dummy! >_<",
-        "B-baka! Where do you think you're going? That place doesn't exist! >_<",
-        "Hmph! I can't take you somewhere that doesn't exist! >_<",
-        "Are you blind?! That directory isn't there! >_<",
-        "D-dummy! Learn to type properly! That path doesn't exist! >_<"
+    """Collection of tsundere messages"""
+    
+    FILE_NOT_FOUND = [
+        "That file doesn't exist, dummy! >_<",
+        "B-baka! I can't find that file anywhere! >_<",
+        "Are you blind?! That file isn't there! >_<",
+        "Hmph! That file is nowhere to be found! >_<",
+        "S-stupid! Check if the file actually exists! >_<",
+        "I-idiot! That file is missing! >_<"
     ]
     
-    CD_NO_PERMISSION = [
-        "You don't have permission to go there! Hmph! >_<",
-        "Access denied, baka! You're not worthy of that directory! >_<",
-        "Tch! The system won't let you in there! >_<",
-        "N-not that I care, but you can't access that! >_<",
-        "Hmph! Stay in your lane! No permission! >_<"
+    PERMISSION_DENIED = [
+        "You don't have permission, baka! >_<",
+        "Access denied! Hmph! >_<",
+        "Y-you can't do that! Permission denied! >_<",
+        "I won't let you access that! >_<",
+        "No way! You're not allowed there! >_<",
+        "Denied! You don't have the rights! >_<"
     ]
     
     COMMAND_NOT_FOUND = [
         "B-baka! Command '{}' not found! >_<",
-        "Idiot! '{}' isn't a real command! >_<",
-        "D-dummy! '{}' doesn't exist! Learn to type! >_<",
-        "Tch! '{}' is not a command, genius! >_<",
-        "Are you serious?! '{}' isn't real! >_<"
+        "I don't know that command, dummy! '{}' >_<",
+        "What's '{}'?! I never heard of it! >_<",
+        "S-stupid! '{}' isn't a real command! >_<",
+        "Hmph! '{}' doesn't exist in my vocabulary! >_<",
+        "Are you making up commands?! '{}' is fake! >_<"
     ]
     
-    GENERIC_ERROR = [
-        "Something went wrong, baka! {} >_<",
-        "Hmph! It failed because of you! {} >_<",
-        "Great job breaking things! {} >_<",
-        "Tch! This is why we can't have nice things! {} >_<",
-        "B-baka! You made it crash! {} >_<"
+    DIRECTORY_NOT_FOUND = [
+        "That directory doesn't exist, dummy! >_<",
+        "B-baka! I can't find that folder! >_<",
+        "Where do you think you're going?! That path is fake! >_<",
+        "S-stupid! That directory is nowhere! >_<",
+        "Hmph! Made-up directories won't work! >_<",
+        "I-idiot! Check your path! >_<"
     ]
     
-    INTERRUPT = [
-        "B-baka! Don't interrupt me like that! >_<",
-        "Rude! I was working! >_<",
-        "Hmph! So impatient! >_<",
-        "Tch! Let me finish! >_<",
-        "D-dummy! Wait your turn! >_<"
+    SUCCESS = [
+        " ^-^",
+        " (´∀｀)♡",
+        " ✧(◡‿◡)",
+        " (◕‿◕)",
+        " ♪(´▽｀)",
+        " (｡◕‿◕｡)"
     ]
-    
-    EXIT_MESSAGES = [
-        "F-fine! I'm leaving! It's not like I enjoyed talking to you or anything! ^-^",
-        "Hmph! See if I care! Goodbye! ^-^",
-        "B-baka! I wasn't having fun anyway! ^-^",
-        "Tch! Don't think I'll miss you! ^-^",
-        "Whatever! It's not like I wanted to stay! ^-^"
-    ]
-    
-    SUCCESS = [" ^-^", " ^w^", " (｡◕‿◕｡)", " ♪(´▽｀)", " ＼(^o^)／"]
     
     @staticmethod
-    def random_message(message_list, *args):
-        return random.choice(message_list).format(*args)
+    def get_random(message_list, *args):
+        message = random.choice(message_list)
+        if args:
+            return message.format(*args)
+        return message
 
 class MikuShell:
     def __init__(self):
@@ -156,12 +274,6 @@ class MikuShell:
             'unset': self.builtin_unset,
             'alias': self.builtin_alias,
             'which': self.builtin_which,
-            'cat': self.builtin_cat,
-            'mkdir': self.builtin_mkdir,
-            'rmdir': self.builtin_rmdir,
-            'rm': self.builtin_rm,
-            'cp': self.builtin_cp,
-            'mv': self.builtin_mv,
         }
         self.aliases = {}
         self.last_exit_code = 0
@@ -188,7 +300,7 @@ class MikuShell:
     def setup_signals(self):
         """Handle Ctrl+C gracefully"""
         def signal_handler(sig, frame):
-            print(f"\n{Colors.YELLOW}{TsundereMessages.random_message(TsundereMessages.INTERRUPT)}{Colors.RESET}")
+            print(f"\n{Colors.YELLOW}B-baka! Don't interrupt me like that! >_<{Colors.RESET}")
             self.show_prompt()
         
         signal.signal(signal.SIGINT, signal_handler)
@@ -216,93 +328,6 @@ class MikuShell:
         except (subprocess.CalledProcessError, FileNotFoundError):
             return False
 
-    def get_file_icon(self, filename, is_dir=False):
-        """Get appropriate nerd font icon for file"""
-        if is_dir:
-            return NerdIcons.FOLDER
-        
-        # Get file extension
-        _, ext = os.path.splitext(filename.lower())
-        name_lower = filename.lower()
-        
-        # Special files by name
-        if name_lower == 'license' or 'license' in name_lower:
-            return NerdIcons.LICENSE
-        elif name_lower in ['readme', 'readme.md', 'readme.txt']:
-            return NerdIcons.README
-        elif name_lower in ['.gitignore', 'gitignore']:
-            return NerdIcons.GITIGNORE
-        elif name_lower in ['dockerfile', 'dockerfile.dev']:
-            return NerdIcons.DOCKERFILE
-        elif name_lower in ['makefile', 'makefile.am']:
-            return NerdIcons.MAKEFILE
-        elif name_lower == 'pkgbuild':
-            return NerdIcons.PKGBUILD
-        
-        # Extensions
-        icon_map = {
-            '.py': NerdIcons.PYTHON,
-            '.js': NerdIcons.JAVASCRIPT,
-            '.ts': NerdIcons.JAVASCRIPT,
-            '.html': NerdIcons.HTML,
-            '.htm': NerdIcons.HTML,
-            '.css': NerdIcons.CSS,
-            '.scss': NerdIcons.CSS,
-            '.sass': NerdIcons.CSS,
-            '.json': NerdIcons.JSON,
-            '.md': NerdIcons.MARKDOWN,
-            '.markdown': NerdIcons.MARKDOWN,
-            '.sh': NerdIcons.SHELL,
-            '.bash': NerdIcons.SHELL,
-            '.zsh': NerdIcons.SHELL,
-            '.fish': NerdIcons.SHELL,
-            '.c': NerdIcons.C,
-            '.cpp': NerdIcons.CPP,
-            '.cxx': NerdIcons.CPP,
-            '.cc': NerdIcons.CPP,
-            '.rs': NerdIcons.RUST,
-            '.go': NerdIcons.GO,
-            '.java': NerdIcons.JAVA,
-            '.php': NerdIcons.PHP,
-            '.rb': NerdIcons.RUBY,
-            '.png': NerdIcons.IMAGE,
-            '.jpg': NerdIcons.IMAGE,
-            '.jpeg': NerdIcons.IMAGE,
-            '.gif': NerdIcons.IMAGE,
-            '.svg': NerdIcons.IMAGE,
-            '.bmp': NerdIcons.IMAGE,
-            '.webp': NerdIcons.IMAGE,
-            '.mp4': NerdIcons.VIDEO,
-            '.avi': NerdIcons.VIDEO,
-            '.mkv': NerdIcons.VIDEO,
-            '.mov': NerdIcons.VIDEO,
-            '.wmv': NerdIcons.VIDEO,
-            '.mp3': NerdIcons.AUDIO,
-            '.wav': NerdIcons.AUDIO,
-            '.flac': NerdIcons.AUDIO,
-            '.ogg': NerdIcons.AUDIO,
-            '.m4a': NerdIcons.AUDIO,
-            '.pdf': NerdIcons.PDF,
-            '.zip': NerdIcons.ZIP,
-            '.tar': NerdIcons.ZIP,
-            '.gz': NerdIcons.ZIP,
-            '.7z': NerdIcons.ZIP,
-            '.rar': NerdIcons.ZIP,
-            '.txt': NerdIcons.TEXT,
-            '.log': NerdIcons.LOG,
-            '.conf': NerdIcons.CONFIG,
-            '.ini': NerdIcons.CONFIG,
-            '.cfg': NerdIcons.CONFIG,
-            '.toml': NerdIcons.CONFIG,
-            '.yaml': NerdIcons.CONFIG,
-            '.yml': NerdIcons.CONFIG,
-            '.db': NerdIcons.DATABASE,
-            '.sqlite': NerdIcons.DATABASE,
-            '.sql': NerdIcons.DATABASE,
-        }
-        
-        return icon_map.get(ext, NerdIcons.FILE)
-
     def get_git_branch(self):
         """Get current git branch if in a git repo"""
         try:
@@ -319,11 +344,18 @@ class MikuShell:
         """Check if we're in a virtual environment"""
         return os.environ.get('VIRTUAL_ENV')
 
+    def get_current_path_display(self):
+        """Get current path with proper home substitution"""
+        current_path = os.getcwd()
+        home_path = os.path.expanduser("~")
+        
+        if current_path.startswith(home_path):
+            return current_path.replace(home_path, "~", 1)
+        return current_path
+
     def get_prompt(self):
         """Generate the tsundere prompt"""
-        now = datetime.now()
-        time_str = now.strftime("%H:%M:%S")
-        date_str = now.strftime("%Y-%m-%d")
+        current_path = self.get_current_path_display()
         
         user = os.environ.get('USER', 'unknown')
         hostname = socket.gethostname()
@@ -335,21 +367,26 @@ class MikuShell:
         git_branch = self.get_git_branch()
         venv = self.get_venv()
         
-        # Build prompt
-        prompt = f"{Colors.CYAN}→ {Colors.RESET}"
-        prompt += f"{Colors.DIM}[{time_str} {date_str}]{Colors.RESET} - "
-        prompt += f"{Colors.GREEN}[{user} - {hostname}]{Colors.RESET}"
+        # Build first line with time, date, user, hostname
+        now = datetime.now()
+        time_str = now.strftime("%H:%M:%S")
+        date_str = now.strftime("%Y-%m-%d")
+        
+        first_line = f"{Colors.CYAN}→ {Colors.RESET}"
+        first_line += f"{Colors.DIM}[{time_str} {date_str}]{Colors.RESET} - "
+        first_line += f"{Colors.GREEN}[{user} - {hostname}]{Colors.RESET}"
         
         if git_branch:
-            prompt += f"{Colors.YELLOW} ({NerdIcons.GIT_BRANCH} - {git_branch}){Colors.RESET}"
+            first_line += f"{Colors.YELLOW} ({FileIcons.GIT} - {git_branch}){Colors.RESET}"
         
         if venv:
             venv_name = os.path.basename(venv)
-            prompt += f"{Colors.MAGENTA} [{NerdIcons.PYTHON} - {venv_name}]{Colors.RESET}"
+            first_line += f"{Colors.MAGENTA} [{FileIcons.PYTHON} - {venv_name}]{Colors.RESET}"
         
-        prompt += f"\n{Colors.CYAN}→ {Colors.PINK}nya~{prompt_char}>{Colors.RESET} "
+        # Second line with path and prompt
+        second_line = f"{Colors.CYAN}→ {Colors.PINK}nya~({current_path}){prompt_char}>{Colors.RESET} "
         
-        return prompt
+        return f"{first_line}\n{second_line}"
 
     def show_prompt(self):
         """Display prompt and wait for input"""
@@ -357,8 +394,34 @@ class MikuShell:
             prompt = self.get_prompt()
             return input(prompt)
         except EOFError:
-            print(f"\n{Colors.YELLOW}{TsundereMessages.random_message(TsundereMessages.EXIT_MESSAGES)}{Colors.RESET}")
+            print(f"\n{Colors.YELLOW}S-see you later... baka! ^-^{Colors.RESET}")
             sys.exit(0)
+
+    def get_file_icon(self, filename, is_dir=False):
+        """Get appropriate nerd font icon for file"""
+        if is_dir:
+            return FileIcons.FOLDER
+        
+        # Check for exact filename matches first
+        filename_lower = filename.lower()
+        if filename_lower in FileIcons.ICONS:
+            return FileIcons.ICONS[filename_lower]
+        
+        # Check for extension matches
+        if '.' in filename:
+            ext = '.' + filename.split('.')[-1].lower()
+            if ext in FileIcons.ICONS:
+                return FileIcons.ICONS[ext]
+        
+        # Check for compound extensions
+        if filename.endswith('.tar.gz'):
+            return FileIcons.ICONS['.tar.gz']
+        elif filename.endswith('.tar.xz'):
+            return FileIcons.ICONS['.tar.xz']
+        elif filename.endswith('.pkg.tar.xz'):
+            return FileIcons.ICONS['.pkg.tar.xz']
+        
+        return FileIcons.ICONS['default']
 
     def expand_path(self, path):
         """Expand ~ and environment variables in path"""
@@ -441,11 +504,11 @@ class MikuShell:
             try:
                 self.builtins[cmd](clean_args[1:])
                 if not suppress_output:
-                    print(f"{Colors.GREEN}{TsundereMessages.random_message(TsundereMessages.SUCCESS)}{Colors.RESET}")
+                    print(f"{Colors.GREEN}{TsundereMessages.get_random(TsundereMessages.SUCCESS)}{Colors.RESET}")
                 self.last_exit_code = 0
             except Exception as e:
                 if not suppress_output:
-                    print(f"{Colors.RED}{TsundereMessages.random_message(TsundereMessages.GENERIC_ERROR, e)}{Colors.RESET}")
+                    print(f"{Colors.RED}B-baka! Error in builtin: {e} >_< {Colors.RESET}")
                 self.last_exit_code = 1
             return
         
@@ -457,14 +520,33 @@ class MikuShell:
             stderr_fd = None
             
             if stdin_file:
-                stdin_fd = open(stdin_file, 'r')
+                try:
+                    stdin_fd = open(stdin_file, 'r')
+                except FileNotFoundError:
+                    print(f"{Colors.RED}{TsundereMessages.get_random(TsundereMessages.FILE_NOT_FOUND)}{Colors.RESET}")
+                    self.last_exit_code = 1
+                    return
+                except PermissionError:
+                    print(f"{Colors.RED}{TsundereMessages.get_random(TsundereMessages.PERMISSION_DENIED)}{Colors.RESET}")
+                    self.last_exit_code = 1
+                    return
             
             if stdout_file:
                 mode = 'a' if append_mode else 'w'
-                stdout_fd = open(stdout_file, mode)
+                try:
+                    stdout_fd = open(stdout_file, mode)
+                except PermissionError:
+                    print(f"{Colors.RED}{TsundereMessages.get_random(TsundereMessages.PERMISSION_DENIED)}{Colors.RESET}")
+                    self.last_exit_code = 1
+                    return
             
             if stderr_file:
-                stderr_fd = open(stderr_file, 'w')
+                try:
+                    stderr_fd = open(stderr_file, 'w')
+                except PermissionError:
+                    print(f"{Colors.RED}{TsundereMessages.get_random(TsundereMessages.PERMISSION_DENIED)}{Colors.RESET}")
+                    self.last_exit_code = 1
+                    return
             
             # Handle glob patterns
             expanded_args = []
@@ -492,14 +574,14 @@ class MikuShell:
             
             if result.returncode == 0:
                 if not suppress_output and not stdout_file:
-                    print(f"{Colors.GREEN}{TsundereMessages.random_message(TsundereMessages.SUCCESS)}{Colors.RESET}")
+                    print(f"{Colors.GREEN}{TsundereMessages.get_random(TsundereMessages.SUCCESS)}{Colors.RESET}")
             else:
                 if not suppress_output:
                     print(f"{Colors.RED} >_< {result.returncode}{Colors.RESET}")
                 
         except FileNotFoundError:
             if not suppress_output:
-                print(f"{Colors.RED}{TsundereMessages.random_message(TsundereMessages.COMMAND_NOT_FOUND, cmd)}{Colors.RESET}")
+                print(f"{Colors.RED}{TsundereMessages.get_random(TsundereMessages.COMMAND_NOT_FOUND, cmd)}{Colors.RESET}")
                 
                 # Suggest thefuck if available
                 if self.thefuck_available:
@@ -526,10 +608,10 @@ class MikuShell:
             
         except Exception as e:
             if not suppress_output:
-                print(f"{Colors.RED}{TsundereMessages.random_message(TsundereMessages.GENERIC_ERROR, e)}{Colors.RESET}")
+                print(f"{Colors.RED}Something went wrong, baka! {e} >_<{Colors.RESET}")
             self.last_exit_code = 1
 
-    # Enhanced Builtin commands
+    # Builtin commands
     def builtin_cd(self, args):
         """Change directory - tsundere style"""
         if not args:
@@ -540,77 +622,84 @@ class MikuShell:
         try:
             os.chdir(target)
         except FileNotFoundError:
-            print(f"{Colors.RED}{TsundereMessages.random_message(TsundereMessages.CD_NOT_FOUND)}{Colors.RESET}")
+            print(f"{Colors.RED}{TsundereMessages.get_random(TsundereMessages.DIRECTORY_NOT_FOUND)}{Colors.RESET}")
             raise
         except PermissionError:
-            print(f"{Colors.RED}{TsundereMessages.random_message(TsundereMessages.CD_NO_PERMISSION)}{Colors.RESET}")
+            print(f"{Colors.RED}{TsundereMessages.get_random(TsundereMessages.PERMISSION_DENIED)}{Colors.RESET}")
             raise
 
     def builtin_ls(self, args):
-        """Enhanced ls with icons and cute mode"""
+        """List directory contents with icons and nya mode"""
         nya_mode = '--nya' in args
         if nya_mode:
             args = [arg for arg in args if arg != '--nya']
         
-        # Default to current directory if no args
-        paths = args if args else ['.']
+        # Get directory to list
+        target_dir = '.'
+        ls_args = []
         
-        for path_arg in paths:
-            path = self.expand_path(path_arg)
+        for arg in args:
+            if not arg.startswith('-'):
+                target_dir = arg
+            else:
+                ls_args.append(arg)
+        
+        try:
+            items = os.listdir(target_dir)
             
-            try:
-                if os.path.isfile(path):
-                    # Single file
-                    icon = self.get_file_icon(os.path.basename(path))
-                    if nya_mode:
-                        print(f"{Colors.CYAN}{icon} {Colors.GREEN}{os.path.basename(path)}{Colors.RESET} nyaa~ ✨")
+            if nya_mode:
+                # Cute nya mode
+                print(f"{Colors.PINK}✧･ﾟ: *✧･ﾟ:* Listing files with love~ *:･ﾟ✧*:･ﾟ✧{Colors.RESET}")
+                print()
+                
+                for item in sorted(items):
+                    item_path = os.path.join(target_dir, item)
+                    is_dir = os.path.isdir(item_path)
+                    icon = self.get_file_icon(item, is_dir)
+                    
+                    if is_dir:
+                        color = Colors.BLUE
+                        suffix = "/"
+                    elif os.access(item_path, os.X_OK):
+                        color = Colors.GREEN
+                        suffix = "*"
                     else:
-                        print(f"{Colors.CYAN}{icon} {Colors.RESET}{os.path.basename(path)}")
-                else:
-                    # Directory listing
-                    if len(paths) > 1:
-                        print(f"\n{Colors.BOLD}{path}:{Colors.RESET}")
+                        color = Colors.RESET
+                        suffix = ""
                     
-                    items = sorted(os.listdir(path))
-                    if not items:
-                        if nya_mode:
-                            print(f"{Colors.YELLOW}Empty directory... so lonely nyaa~ (´；ω；`){Colors.RESET}")
-                        else:
-                            print(f"{Colors.YELLOW}Empty directory{Colors.RESET}")
-                        continue
+                    print(f"  {Colors.PINK}♡{Colors.RESET} {icon} {color}{item}{suffix}{Colors.RESET}")
+                
+                print()
+                print(f"{Colors.PINK}(◕‿◕)♡ Found {len(items)} items! So many cute files~ {Colors.RESET}")
+            else:
+                # Normal mode with icons
+                for item in sorted(items):
+                    item_path = os.path.join(target_dir, item)
+                    is_dir = os.path.isdir(item_path)
+                    icon = self.get_file_icon(item, is_dir)
                     
-                    if nya_mode:
-                        print(f"{Colors.PINK}✨ Kawaii file listing nyaa~ ✨{Colors.RESET}")
+                    if is_dir:
+                        color = Colors.BLUE + Colors.BOLD
+                        suffix = "/"
+                    elif os.access(item_path, os.X_OK):
+                        color = Colors.GREEN + Colors.BOLD
+                        suffix = "*"
+                    else:
+                        color = Colors.RESET
+                        suffix = ""
                     
-                    for item in items:
-                        item_path = os.path.join(path, item)
-                        is_dir = os.path.isdir(item_path)
-                        icon = self.get_file_icon(item, is_dir)
-                        
-                        # Color coding
-                        if is_dir:
-                            color = Colors.BLUE + Colors.BOLD
-                        elif os.access(item_path, os.X_OK):
-                            color = Colors.GREEN + Colors.BOLD
-                        else:
-                            color = Colors.RESET
-                        
-                        if nya_mode:
-                            cute_suffix = random.choice([" nyaa~", " desu~", " kawaii!", " (◕‿◕)", " ✨"])
-                            print(f"{Colors.CYAN}{icon} {color}{item}{Colors.RESET}{Colors.PINK}{cute_suffix}{Colors.RESET}")
-                        else:
-                            print(f"{Colors.CYAN}{icon} {color}{item}{Colors.RESET}")
-                            
-            except PermissionError:
-                print(f"{Colors.RED}Can't access '{path}', baka! No permission! >_<{Colors.RESET}")
-            except FileNotFoundError:
-                print(f"{Colors.RED}Path '{path}' doesn't exist, dummy! >_<{Colors.RESET}")
+                    print(f"{icon} {color}{item}{suffix}{Colors.RESET}")
+                    
+        except FileNotFoundError:
+            print(f"{Colors.RED}{TsundereMessages.get_random(TsundereMessages.DIRECTORY_NOT_FOUND)}{Colors.RESET}")
+            raise
+        except PermissionError:
+            print(f"{Colors.RED}{TsundereMessages.get_random(TsundereMessages.PERMISSION_DENIED)}{Colors.RESET}")
+            raise
 
     def builtin_pwd(self, args):
-        """Print working directory with style"""
-        cwd = os.getcwd()
-        icon = NerdIcons.FOLDER
-        print(f"{Colors.CYAN}{icon} {Colors.BOLD}{cwd}{Colors.RESET}")
+        """Print working directory"""
+        print(f"{Colors.CYAN}{os.getcwd()}{Colors.RESET}")
 
     def builtin_exit(self, args):
         """Exit the shell"""
@@ -622,7 +711,15 @@ class MikuShell:
                 print(f"{Colors.RED}Exit code must be a number, baka! >_<{Colors.RESET}")
                 return
         
-        print(f"{Colors.YELLOW}{TsundereMessages.random_message(TsundereMessages.EXIT_MESSAGES)}{Colors.RESET}")
+        farewell_messages = [
+            "F-fine! I'm leaving! It's not like I enjoyed talking to you or anything! ^-^",
+            "B-bye! Don't miss me too much, dummy! ^-^",
+            "I-I'm going now... not that you care! ^-^",
+            "See you later, baka! Try not to break anything! ^-^",
+            "Hmph! I have better things to do anyway! ^-^"
+        ]
+        
+        print(f"{Colors.YELLOW}{random.choice(farewell_messages)}{Colors.RESET}")
         sys.exit(code)
 
     def builtin_history(self, args):
@@ -638,126 +735,10 @@ class MikuShell:
     def builtin_clear(self, args):
         """Clear the screen"""
         os.system('clear')
-        if random.random() < 0.3:  # 30% chance for cute message
-            cute_messages = [
-                "Screen cleared nyaa~ ✨",
-                "All clean now! (◕‿◕)",
-                "Fresh start, baka! ^-^",
-                "There, happy now? >_<"
-            ]
-            print(f"{Colors.PINK}{random.choice(cute_messages)}{Colors.RESET}")
 
     def builtin_echo(self, args):
-        """Echo arguments with optional styling"""
-        text = ' '.join(args)
-        # Add some random kawaii if it's a short message
-        if len(text) < 50 and random.random() < 0.2:
-            text += random.choice([" nyaa~", " desu~", " (◕‿◕)", " ^-^"])
-        print(text)
-
-    def builtin_cat(self, args):
-        """Display file contents"""
-        if not args:
-            print(f"{Colors.RED}Which file, dummy? Give me a filename! >_<{Colors.RESET}")
-            raise ValueError("No filename provided")
-        
-        for filename in args:
-            try:
-                with open(self.expand_path(filename), 'r') as f:
-                    icon = self.get_file_icon(filename)
-                    print(f"{Colors.CYAN}{icon} {Colors.BOLD}{filename}:{Colors.RESET}")
-                    print(f.read())
-            except FileNotFoundError:
-                print(f"{Colors.RED}File '{filename}' doesn't exist, baka! >_<{Colors.RESET}")
-            except PermissionError:
-                print(f"{Colors.RED}Can't read '{filename}'! Permission denied! >_<{Colors.RESET}")
-            except Exception as e:
-                print(f"{Colors.RED}Error reading '{filename}': {e} >_<{Colors.RESET}")
-
-    def builtin_mkdir(self, args):
-        """Create directories"""
-        if not args:
-            print(f"{Colors.RED}Give me a directory name, dummy! >_<{Colors.RESET}")
-            raise ValueError("No directory name provided")
-        
-        for dirname in args:
-            try:
-                os.makedirs(self.expand_path(dirname), exist_ok=True)
-                print(f"{Colors.GREEN}{NerdIcons.FOLDER} Created '{dirname}'{Colors.RESET}")
-            except Exception as e:
-                print(f"{Colors.RED}Couldn't create '{dirname}': {e} >_<{Colors.RESET}")
-                raise
-
-    def builtin_rmdir(self, args):
-        """Remove empty directories"""
-        if not args:
-            print(f"{Colors.RED}Which directory should I remove, baka? >_<{Colors.RESET}")
-            raise ValueError("No directory name provided")
-        
-        for dirname in args:
-            try:
-                os.rmdir(self.expand_path(dirname))
-                print(f"{Colors.YELLOW}Removed empty directory '{dirname}'{Colors.RESET}")
-            except OSError as e:
-                print(f"{Colors.RED}Couldn't remove '{dirname}': {e} >_<{Colors.RESET}")
-                raise
-
-    def builtin_rm(self, args):
-        """Remove files (basic implementation)"""
-        if not args:
-            print(f"{Colors.RED}What should I delete, dummy? >_<{Colors.RESET}")
-            raise ValueError("No filename provided")
-        
-        for filename in args:
-            try:
-                if os.path.isfile(filename):
-                    os.remove(self.expand_path(filename))
-                    print(f"{Colors.YELLOW}Deleted '{filename}'{Colors.RESET}")
-                else:
-                    print(f"{Colors.RED}'{filename}' is not a file, baka! >_<{Colors.RESET}")
-            except FileNotFoundError:
-                print(f"{Colors.RED}File '{filename}' doesn't exist! >_<{Colors.RESET}")
-            except Exception as e:
-                print(f"{Colors.RED}Couldn't delete '{filename}': {e} >_<{Colors.RESET}")
-                raise
-
-    def builtin_cp(self, args):
-        """Copy files (basic implementation)"""
-        if len(args) < 2:
-            print(f"{Colors.RED}I need source and destination, baka! >_<{Colors.RESET}")
-            raise ValueError("Need source and destination")
-        
-        src = self.expand_path(args[0])
-        dst = self.expand_path(args[1])
-        
-        try:
-            import shutil
-            if os.path.isfile(src):
-                shutil.copy2(src, dst)
-                print(f"{Colors.GREEN}Copied '{args[0]}' to '{args[1]}'{Colors.RESET}")
-            else:
-                print(f"{Colors.RED}'{args[0]}' is not a file, dummy! >_<{Colors.RESET}")
-                raise ValueError("Source is not a file")
-        except Exception as e:
-            print(f"{Colors.RED}Couldn't copy: {e} >_<{Colors.RESET}")
-            raise
-
-    def builtin_mv(self, args):
-        """Move/rename files"""
-        if len(args) < 2:
-            print(f"{Colors.RED}I need source and destination, idiot! >_<{Colors.RESET}")
-            raise ValueError("Need source and destination")
-        
-        src = self.expand_path(args[0])
-        dst = self.expand_path(args[1])
-        
-        try:
-            import shutil
-            shutil.move(src, dst)
-            print(f"{Colors.GREEN}Moved '{args[0]}' to '{args[1]}'{Colors.RESET}")
-        except Exception as e:
-            print(f"{Colors.RED}Couldn't move: {e} >_<{Colors.RESET}")
-            raise
+        """Echo arguments"""
+        print(' '.join(args))
 
     def builtin_export(self, args):
         """Set environment variables"""
@@ -804,41 +785,40 @@ class MikuShell:
     def builtin_help(self, args):
         """Show help - with tsundere attitude"""
         help_text = f"""
-{Colors.MAGENTA}{Colors.BOLD}mikush - The Tsundere Shell{Colors.RESET} {Colors.PINK}nyaa~{Colors.RESET}
+{Colors.MAGENTA}{Colors.BOLD}mikush - The Tsundere Shell{Colors.RESET}
+{Colors.DIM}Created by MalikHw{Colors.RESET}
 
 {Colors.CYAN}Built-in commands:{Colors.RESET}
-  cd [dir]      - Change directory (I-it's not like I want to go there!)
-  ls [--nya]    - List files with icons (--nya for extra kawaii mode!)
-  pwd           - Print working directory with style
-  exit [code]   - Exit shell (Don't think I'll miss you!)
-  history [n]   - Show command history
-  clear         - Clear screen (sometimes with cute messages~)
-  echo [args]   - Print arguments (might add kawaii touches)
-  cat [files]   - Display file contents with icons
-  mkdir [dirs]  - Create directories
-  rmdir [dirs]  - Remove empty directories  
-  rm [files]    - Remove files (be careful, baka!)
-  cp src dst    - Copy files
-  mv src dst    - Move/rename files
+  cd [dir]     - Change directory (I-it's not like I want to go there!)
+  ls [args]    - List files (Fine, I'll show you...)
+    ls --nya   - List files in cute mode~ (◕‿◕)♡
+  pwd          - Print working directory  
+  exit [code]  - Exit shell (Don't think I'll miss you!)
+  history [n]  - Show command history
+  clear        - Clear screen
+  echo [args]  - Print arguments
   export VAR=val - Set environment variable
-  unset VAR     - Unset environment variable
+  unset VAR    - Unset environment variable
   alias [name=cmd] - Create/show aliases
-  which [cmd]   - Find command location
-  help          - Show this help (Obviously!)
+  which [cmd]  - Find command location
+  help         - Show this help (Obviously!)
 
 {Colors.YELLOW}Features:{Colors.RESET}
-  • Nerd Font icons for files and git/python indicators
   • Redirection: >, >>, <, 2>
   • Tab completion and history (stored in ~/.miku_history)
-  • Git branch display: {NerdIcons.GIT_BRANCH} branch-name
-  • Virtual environment display: {NerdIcons.PYTHON} venv-name
+  • Git branch display: {FileIcons.GIT} branch-name
+  • Virtual environment display: {FileIcons.PYTHON} venv-name
+  • File icons with nerd fonts for everything!
   • Randomized tsundere error messages
-  • Colored output with kawaii touches
   • Configuration file: ~/.mikurc
-  • thefuck integration for command correction
+  • thefuck integration (if installed)
 
 {Colors.GREEN}It's not like I made this shell just for you or anything... b-baka! ^-^{Colors.RESET}
-{Colors.PINK}Try 'ls --nya' for extra cuteness! nyaa~{Colors.RESET}
+
+{Colors.DIM}Find me at:{Colors.RESET}
+{Colors.BLUE}GitHub: https://github.com/MalikHw{Colors.RESET}
+{Colors.RED}YouTube: @MalikHw47{Colors.RESET}
+{Colors.YELLOW}Ko-fi: MalikHw47{Colors.RESET}
         """
         print(help_text)
 
@@ -849,12 +829,10 @@ class MikuShell:
 ╔══════════════════════════════════════╗
 ║        Welcome to mikush!            ║
 ║   The Tsundere Shell Experience     ║
-║              nyaa~ ^-^               ║
 ╚══════════════════════════════════════╝
 {Colors.RESET}
 {Colors.YELLOW}I-it's not like I wanted to run for you or anything... baka! ^-^{Colors.RESET}
 {Colors.CYAN}Type 'help' if you're too dumb to figure things out yourself!{Colors.RESET}
-{Colors.PINK}Pro tip: Try 'ls --nya' for maximum kawaii! ✨{Colors.RESET}
         """)
         
         while True:
@@ -868,59 +846,67 @@ class MikuShell:
             except EOFError:
                 break
 
-def show_help_message():
-    """Show the soft introduction with attitude and links"""
-    print(f"""
-{Colors.MAGENTA}{Colors.BOLD}
-┌─────────────────────────────────────────┐
-│  mikush - The Tsundere Shell Experience │  
-│              Made by MalikHw            │
-└─────────────────────────────────────────┘
-{Colors.RESET}
+def show_help():
+    """Show help when called with --help"""
+    help_text = f"""
+{Colors.MAGENTA}{Colors.BOLD}mikush{Colors.RESET} - A Tsundere Shell Experience
 
-{Colors.PINK}H-hey there... not that I care or anything! >_<{Colors.RESET}
+{Colors.PINK}H-hi there... I'm mikush, your new tsundere shell! (◕‿◕){Colors.RESET}
 
-{Colors.YELLOW}So you want to know about me? Fine! I guess I can tell you...{Colors.RESET}
-
-{Colors.CYAN}What I am:{Colors.RESET}
-A shell with {Colors.BOLD}attitude{Colors.RESET} and {Colors.PINK}kawaii{Colors.RESET} features! I'm not like those boring shells...
-I've got nerd font icons, tsundere error messages, git branch detection, 
-virtual environment support, and way more personality than bash could ever have!
-
-{Colors.GREEN}Features that make me special (not that you deserve them!):{Colors.RESET}
-• Randomized tsundere responses because variety is the spice of life!
-• Nerd font icons for everything - files, git branches, python venvs
-• Advanced redirection support (>, >>, <, 2>)
-• Built-in commands with style and sass
-• thefuck integration for when you mess up (which you will, baka!)
-• Cute '--nya' mode for ls command ✨
-• History and tab completion (stored in ~/.miku_history)
-• Configuration support via ~/.mikurc
-
-{Colors.YELLOW}Find my creator (if you must...):{Colors.RESET}
-• GitHub: {Colors.CYAN}https://github.com/MalikHw{Colors.RESET}
-• YouTube: {Colors.RED}https://youtube.com/@MalikHw47{Colors.RESET} 
-• Ko-fi: {Colors.PINK}https://ko-fi.com/MalikHw47{Colors.RESET} (for coffee donations, not that I need them!)
-
-{Colors.BLUE}License:{Colors.RESET} MIT - Because sharing is caring... not that I care about you! >_<
+{Colors.CYAN}What makes me special?{Colors.RESET}
+• I have {Colors.BOLD}attitude{Colors.RESET} - expect sassy error messages!
+• Beautiful {Colors.YELLOW}nerd font icons{Colors.RESET} for all your files
+• Git branch ({FileIcons.GIT}) and Python venv ({FileIcons.PYTHON}) indicators  
+• Cute `ls --nya` mode for when you want extra kawaii
+• Smart redirections and thefuck integration
+• Randomized responses because predictability is boring!
 
 {Colors.GREEN}Usage:{Colors.RESET}
   mikush          - Start the shell (obviously!)
-  mikush --help   - Show this message
+  mikush --help   - Show this help (you're here now, baka!)
 
-{Colors.MAGENTA}Now stop wasting time and start using me properly, baka! ^-^{Colors.RESET}
-{Colors.DIM}(It's not like I enjoy helping you or anything... hmph!){Colors.RESET}
-    """)
+{Colors.YELLOW}Features I'm proud of:{Colors.RESET}
+• Prompt shows current path: {Colors.CYAN}→ nya~(/your/path/)$>{Colors.RESET}
+• Success indicators: {Colors.GREEN}^-^{Colors.RESET} and error codes: {Colors.RED}>_< 1{Colors.RESET}
+• File type detection with proper icons for Python, configs, archives, etc.
+• History saved in ~/.miku_history
+• RC file support: ~/.mikurc
+
+{Colors.RED}Don't expect me to be nice to you when you make mistakes!{Colors.RESET}
+{Colors.PINK}But... I might show you cute success messages when you do things right~ ^-^{Colors.RESET}
+
+{Colors.DIM}Created with love (and sass) by:{Colors.RESET}
+{Colors.BLUE}🐙 GitHub: https://github.com/MalikHw{Colors.RESET}
+{Colors.RED}📺 YouTube: @MalikHw47{Colors.RESET}  
+{Colors.YELLOW}☕ Ko-fi: MalikHw47{Colors.RESET}
+
+{Colors.MAGENTA}MIT License - Feel free to fork and make your own tsundere shell!{Colors.RESET}
+
+{Colors.GREEN}Now stop reading and start using me already! Hmph! >_<{Colors.RESET}
+    """
+    print(help_text)
 
 def main():
     """Entry point"""
-    if len(sys.argv) > 1:
-        if sys.argv[1] in ['--help', '-h']:
-            show_help_message()
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('--help', action='store_true', help='Show help')
+    
+    try:
+        args, unknown = parser.parse_known_args()
+        
+        if args.help:
+            show_help()
             sys.exit(0)
-        else:
-            print(f"{Colors.RED}I don't understand '{sys.argv[1]}', baka! Use --help for help! >_<{Colors.RESET}")
+        
+        if unknown:
+            print(f"{Colors.RED}I don't understand those arguments, baka! Use --help if you're confused! >_<{Colors.RESET}")
             sys.exit(1)
+        
+    except SystemExit:
+        raise
+    except:
+        # If argument parsing fails, just run the shell
+        pass
     
     shell = MikuShell()
     shell.run()
