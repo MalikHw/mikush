@@ -600,7 +600,7 @@ class MikuShell:
                                         self.execute_command(suggestion)
                                         return
                             except Exception:
-                                print(f"{Colors.RED}Hmph! Even thefuck couldn't help! >_<{Colors.RESET}")
+                                print(f"{Colors.RED}Hmph! Even thefuck won't give a single fuck! >_<{Colors.RESET}")
                     except (EOFError, KeyboardInterrupt):
                         print()
             
